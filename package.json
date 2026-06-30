@@ -1,6 +1,6 @@
 {
   "name": "@fexd/toolchain",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Run project scripts with a project-pinned Node.js and pnpm toolchain.",
   "repository": {
     "type": "git",

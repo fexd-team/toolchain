@@ -110,10 +110,12 @@ function downloadFile(url, destination) {
   });
 }
 
-function extractArchive(archivePath, destination) {
+function extractArchive(archivePath, destination, options) {
+  const opts = options || {};
   fs.mkdirSync(destination, { recursive: true });
 
-  const result = childProcess.spawnSync('tar', ['-xf', archivePath, '-C', destination], {
+  const spawn = opts.spawnSync || childProcess.spawnSync;
+  const result = spawn(getTarCommand(opts), ['-xf', archivePath, '-C', destination], {
     stdio: 'inherit'
   });
 
@@ -126,9 +128,23 @@ function extractArchive(archivePath, destination) {
   }
 }
 
+function getTarCommand(options) {
+  const opts = options || {};
+  const platform = opts.platform || process.platform;
+
+  if (platform !== 'win32') {
+    return 'tar';
+  }
+
+  const env = opts.env || process.env;
+  const systemRoot = env.SystemRoot || env.SYSTEMROOT || 'C:\\Windows';
+  return path.win32.join(systemRoot, 'System32', 'tar.exe');
+}
+
 module.exports = {
   ensureNode,
   ensurePnpm,
   downloadFile,
-  extractArchive
+  extractArchive,
+  getTarCommand
 };

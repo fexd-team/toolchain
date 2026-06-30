@@ -2,7 +2,7 @@ const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { ensureNode, ensurePnpm } = require('../src/install.cjs');
+const { ensureNode, ensurePnpm, extractArchive } = require('../src/install.cjs');
 
 function tempCache() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tc-cache-'));
@@ -73,6 +73,29 @@ test('ensurePnpm downloads and extracts pnpm when the cached CLI is missing', as
       'pnpm-9.15.9.tgz'
     ]);
     assert.strictEqual(events[1][0], 'extract');
+  } finally {
+    cache.cleanup();
+  }
+});
+
+test('extractArchive uses the Windows system tar instead of PATH tar on Windows', () => {
+  const cache = tempCache();
+  const calls = [];
+
+  try {
+    extractArchive('C:\\cache\\archive.zip', cache.root, {
+      platform: 'win32',
+      env: { SystemRoot: 'C:\\Windows' },
+      spawnSync: (command, args, options) => {
+        calls.push({ command, args, options });
+        return { status: 0 };
+      }
+    });
+
+    assert.strictEqual(calls.length, 1);
+    assert.strictEqual(calls[0].command, 'C:\\Windows\\System32\\tar.exe');
+    assert.deepStrictEqual(calls[0].args, ['-xf', 'C:\\cache\\archive.zip', '-C', cache.root]);
+    assert.strictEqual(calls[0].options.stdio, 'inherit');
   } finally {
     cache.cleanup();
   }
